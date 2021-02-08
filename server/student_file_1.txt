@@ -2,6 +2,6 @@
 2 Petr Petrov 04.07.1988
 3 Denis Denisov 13.01.1988
 6 Semen Semenov 01.01.1999
-7 Pavel Pavlov 02.05.2000 
+7 Pavel Pavlov 02.05.2000
 4 Vladimir Jukov 04.5.1987
 5 Vladimir Kochkin 11.10.1989

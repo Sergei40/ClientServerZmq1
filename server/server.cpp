@@ -6,25 +6,31 @@
 #include <zmq.hpp>
 #include <bits/stdc++.h>
 
-void readFileInSet(auto& readFileInSet, std::ifstream& studentFile);
+void readFileInSet(auto& allStudentsSet, std::ifstream& studentFile);
 
 int main(int argc, char* argv[]) 
 {
     if (argc < 3) {
-        std::cout << "File not found\n"; 
+        std::cout << "files not found\n";
+        return -1;
     }
     else {
-        std::ifstream file1 ("student_file_1.txt");
-        if (!file1.is_open()) {
-            cout << "File can't open\n";
-            return 1;
+        std::ifstream studentFile1 (argv[2]);
+        std::ifstream studentFile2 (argv[3]);
+        if (studentFile1.is_open() && studentFile2.is_open()) {
+            std::unordered_set <std::string> allStudentsSet;
+
+            readFileInSet(allStudentsSet, studentFile1);
+            readFileInSet(allStudentsSet, studentFile2);
+            
+            for(auto i : allStudentsSet) std::cout << i << std::endl;
         }
-        else
-        {
-             
+        else {
+            std::cout << "files can't be opened\n";
+            return -1;
         }
     } 
-     using namespace std::chrono_literals;
+    using namespace std::chrono_literals;
 
     // initialize the zmq context with a single IO thread
     zmq::context_t context{1};
