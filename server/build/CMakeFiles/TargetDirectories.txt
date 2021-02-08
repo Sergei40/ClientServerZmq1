@@ -1,0 +1,3 @@
+/home/sergei/Desktop/client_server/server/build/CMakeFiles/rebuild_cache.dir
+/home/sergei/Desktop/client_server/server/build/CMakeFiles/edit_cache.dir
+/home/sergei/Desktop/client_server/server/build/CMakeFiles/server.dir

@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/sergei/Desktop/client_server/server/server.cpp
+string
+-
+chrono
+-
+thread
+-
+iostream
+-
+fstream
+-
+zmq.hpp
+-
+
