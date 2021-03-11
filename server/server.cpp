@@ -1,17 +1,23 @@
 #include <string>
-#include <chrono>
-#include <thread>
+#include <time.h>
 #include <iostream>
 #include <fstream>
 #include <zmq.hpp>
-//#include "zhelpers.hpp"
-#include <bits/stdc++.h>
+#include <unistd.h>
+#include <bits/stdc++.h> //for unordered_set
 
-void readFileInSet(auto& allStudentsSet, std::ifstream& studentFile);
+#define SIZE_OF_MESSAGE 12
+#define SUBSCRIBERS_EXPECTED 1
+
+typedef std::unordered_set <std::string> SetOfStrings;
+void readFileInSet(SetOfStrings& allStudentsSet, std::ifstream& studentFile);
+static bool s_send (zmq::socket_t & socket, const std::string & string);
 
 int main(int argc, char* argv[]) 
 {
-    std::unordered_set <std::string> allStudentsSet;
+    SetOfStrings allStudentsSet;
+    std::set<unsigned long>::iterator it;
+
     if (argc < 3) {
         std::cout << "files not found\n";
         return -1;
@@ -22,43 +28,50 @@ int main(int argc, char* argv[])
         if (studentFile1.is_open() && studentFile2.is_open()) {
             readFileInSet(allStudentsSet, studentFile1);
             readFileInSet(allStudentsSet, studentFile2);
-            
-            for(auto i : allStudentsSet) std::cout << i << std::endl;
         }
         else {
             std::cout << "files can't be opened\n";
             return -1;
         }
     }
-     
-    // initialize the zmq context with a single IO thread
     zmq::context_t context(1);
 
-    // construct a REP (reply) socket and bind to interface
-    zmq::socket_t publisher(context, ZMQ_PUB);
-    publisher.bind("tcp://*:5555");
+    zmq::socket_t publisher (context, ZMQ_PUB);
 
-    // prepare some static data for responses
-    const std::string data{"World"};
+    int sndhwm = 0;
+    publisher.setsockopt (ZMQ_SNDHWM, &sndhwm, sizeof (sndhwm));
 
-    while (true) 
-    {
-        zmq::message_t message(allStudentsSet.begin(), allStudentsSet.end());
-        // simulate work
-        // snprintf((string)message.data(), 1, 
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+    publisher.bind("tcp://*:5561");
 
-        // send the reply to the client
-        publisher.send(message,zmq::send_flags::dontwait); 
+    //  Socket to receive signals
+    zmq::socket_t syncservice (context, ZMQ_REP);
+    syncservice.bind("tcp://*:5562");
+
+    //  Get synchronization from subscribers
+    int subscribers = 0;
+    while (subscribers < SUBSCRIBERS_EXPECTED) {
+        
+        //  - wait for synchronization request
+        zmq::message_t request;
+        syncservice.recv(&request); 
+       
+        //  - send synchronization reply
+        s_send (syncservice, "");
+
+        subscribers++;
     }
-
+    
+    for(auto it : allStudentsSet) {  
+        s_send (publisher, it);
+    }
+    
+    s_send (publisher, "END");
+    sleep (1);              //  Give 0MQ time to flush output
     return 0;
-}
+} 
 
-
-void readFileInSet(auto& allStudentsSet, std::ifstream& studentFile) {
-    std::string valueSet, tmp;
-    int keySet;
+void readFileInSet(SetOfStrings& allStudentsSet, std::ifstream& studentFile) {
+    std::string valueSet;
 
     while (getline(studentFile, valueSet)) {
         int i = 0;
@@ -68,4 +81,14 @@ void readFileInSet(auto& allStudentsSet, std::ifstream& studentFile) {
         valueSet.erase(0, i+1); 
         allStudentsSet.insert(valueSet);
     }
+}
+
+//  Convert string to 0MQ string and send to socket
+static bool s_send (zmq::socket_t & socket, const std::string & string) {
+
+    zmq::message_t message(string.size());
+    memcpy(message.data(), string.data(), string.size());
+
+    bool rc = socket.send(message);
+    return (rc);
 }

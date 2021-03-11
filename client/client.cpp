@@ -1,34 +1,61 @@
 #include <string>
 #include <iostream>
-
+#include <sstream>
 #include <zmq.hpp>
+#include <set>
+
+//  Convert string to 0MQ string and send to socket
+static bool s_send (zmq::socket_t & socket, const std::string & string);
+//  Receive 0MQ string from socket and convert into string
+static std::string s_recv (zmq::socket_t & socket);
 
 int main()
 {
-    // initialize the zmq context with a single IO thread
-    zmq::context_t context{1};
+    zmq::context_t context(1);
+    //  First, connect our subscriber socket
+    zmq::socket_t subscriber (context, ZMQ_SUB);
+    subscriber.connect("tcp://localhost:5561");
+    subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
 
-    // construct a REQ (request) socket and connect to interface
-    zmq::socket_t socket{context, zmq::socket_type::req};
-    socket.connect("tcp://localhost:5555");
+    //  Second, synchronize with publisher
+    zmq::socket_t syncclient (context, ZMQ_REQ);
+    syncclient.connect("tcp://localhost:5562");
 
-    // set up some static data to send
-    const std::string data{"Hello"};
+    //  - send a synchronization request
+    s_send (syncclient, "");
 
-    for (auto request_num = 0; request_num < 10; ++request_num) 
-    {
-        // send the request message
-        std::cout << "Sending Hello " << request_num << "..." << std::endl;
-        socket.send(zmq::buffer(data), zmq::send_flags::none);
-        
-        // wait for reply from server
-        zmq::message_t reply{};
-        socket.recv(reply, zmq::recv_flags::none);
+    //  - wait for synchronization reply
+    s_recv (syncclient);
 
-        std::cout << "Received " << reply.to_string(); 
-        std::cout << " (" << request_num << ")";
-        std::cout << std::endl;
+    //  Third, get our updates and report how many we got
+    std::set <std::string> allStudentsSet;
+    std::set<unsigned long>::iterator it;
+    while (1) {
+        zmq::message_t message;
+        subscriber.recv(&message);
+        std::string student(static_cast<char*>(message.data()), message.size());
+        if (student.compare("END") == 0) {
+            break;
+        }
+        allStudentsSet.insert(student);
     }
-
+    for (auto it : allStudentsSet) std::cout << it << std::endl;
     return 0;
+}
+
+//  Convert string to 0MQ string and send to socket
+static bool s_send (zmq::socket_t & socket, const std::string & string) {
+    zmq::message_t message(string.size());
+    memcpy(message.data(), string.data(), string.size());
+
+    bool rc = socket.send(message);
+    return (rc);
+}
+
+//  Receive 0MQ string from socket and convert into string
+static std::string s_recv (zmq::socket_t & socket) {
+    zmq::message_t message;
+    socket.recv(&message);
+
+    return std::string(static_cast<char*>(message.data()), message.size());
 }
