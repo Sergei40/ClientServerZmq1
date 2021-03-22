@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
         //  - send synchronization reply
         s_send (syncservice, "");
 
-        subscribers++;
+
     }
     
     for(auto it : allStudentsSet) {  
