@@ -10,6 +10,7 @@
 #define SUBSCRIBERS_EXPECTED 1
 
 typedef std::unordered_set <std::string> SetOfStrings;
+
 void readFileInSet(SetOfStrings& allStudentsSet, std::ifstream& studentFile);
 static bool s_send (zmq::socket_t & socket, const std::string & string);
 
