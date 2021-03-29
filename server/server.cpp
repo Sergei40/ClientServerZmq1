@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
         }
     }
     zmq::context_t context(1);
-
     zmq::socket_t publisher (context, ZMQ_PUB);
 
     int sndhwm = 0;
@@ -58,8 +57,6 @@ int main(int argc, char* argv[])
        
         //  - send synchronization reply
         s_send (syncservice, "");
-
-
     }
     
     for(auto it : allStudentsSet) {  
